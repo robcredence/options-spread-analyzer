@@ -13,11 +13,36 @@ build:
   script:
     - npm ci
     - npm run build
+    - echo "Build completed successfully!"
+    - ls -la dist/
   artifacts:
+    name: "options-spread-analyzer-$CI_COMMIT_REF_NAME"
     paths:
       - dist/
     expire_in: 1 week
+    expose_as: 'Download Built Application'
 
+# Alternative deployment - creates a deployable artifact
+deploy-artifact:
+  stage: deploy
+  dependencies:
+    - build
+  script:
+    - mkdir -p public
+    - cp -r dist/* public/
+    - echo "Deployment artifact created in public/"
+    - echo "Download the artifact from the CI/CD pipeline page"
+    - ls -la public/
+  artifacts:
+    name: "deployed-app-$CI_COMMIT_REF_NAME"
+    paths:
+      - public/
+    expire_in: 1 month
+    expose_as: 'Download Deployed Application'
+  only:
+    - main
+
+# Keep this job in case Pages gets enabled later
 pages:
   stage: deploy
   dependencies:
@@ -25,8 +50,10 @@ pages:
   script:
     - mkdir -p public
     - cp -r dist/* public/
+    - echo "GitLab Pages deployment prepared (requires Pages to be enabled)"
   artifacts:
     paths:
       - public
   only:
     - main
+  allow_failure: true  # Won't fail the pipeline if Pages isn't available

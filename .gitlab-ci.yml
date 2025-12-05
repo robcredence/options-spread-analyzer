@@ -1,12 +1,35 @@
 image: node:18-alpine
 
 stages:
+  - mirror
   - build
   - deploy
 
 cache:
   paths:
     - node_modules/
+
+# Mirror to GitHub for AWS Amplify integration
+mirror-to-github:
+  image: alpine/git:latest
+  stage: mirror
+  script:
+    - echo "Setting up GitHub mirror..."
+    - git config --global user.email "ci@gitlab.com"
+    - git config --global user.name "GitLab CI"
+    # This will be configured with GitHub token as CI/CD variable
+    - |
+      if [ -n "$GITHUB_TOKEN" ] && [ -n "$GITHUB_REPO" ]; then
+        echo "Pushing to GitHub repository..."
+        git remote add github https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git || true
+        git push github HEAD:main --force
+        echo "Successfully mirrored to GitHub"
+      else
+        echo "GITHUB_TOKEN or GITHUB_REPO not set. Skipping GitHub mirror."
+      fi
+  only:
+    - main
+  allow_failure: true
 
 build:
   stage: build
